@@ -1,117 +1,148 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
-import axios from 'axios';
+import ClockScreen from './screens/ClockScreen';
 
-interface PingData {
-  server: string;
-  ping: number;
-  region: string;
-  status: 'good' | 'fair' | 'poor';
+interface TabItem {
+  id: string;
+  name: string;
+  icon: string;
 }
 
-export default function App() {
-  const [pingData, setPingData] = useState<PingData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [servers, setServers] = useState<PingData[]>([]);
+export default function AppNavigator() {
+  const [activeTab, setActiveTab] = useState('ping');
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const tabs: TabItem[] = [
+    { id: 'ping', name: 'پینگ', icon: '📊' },
+    { id: 'clock', name: 'ساعت', icon: '🕐' },
+    { id: 'settings', name: 'تنظیمات', icon: '⚙️' },
+  ];
 
-  useEffect(() => {
-    fetchServers();
-  }, []);
-
-  const fetchServers = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/servers`);
-      setServers(response.data);
-    } catch (error) {
-      console.error('Error fetching servers:', error);
-    } finally {
-      setLoading(false);
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'ping':
+        return <PingScreen />;
+      case 'clock':
+        return <ClockScreen />;
+      case 'settings':
+        return <SettingsScreen />;
+      default:
+        return <PingScreen />;
     }
-  };
-
-  const checkPing = async (server: string) => {
-    try {
-      setLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/ping`, { server });
-      setPingData(response.data);
-    } catch (error) {
-      console.error('Error checking ping:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getPingColor = (ping: number) => {
-    if (ping < 50) return '#4CAF50'; // Green - Good
-    if (ping < 100) return '#FFC107'; // Yellow - Fair
-    return '#F44336'; // Red - Poor
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        {renderContent()}
+      </View>
+
+      {/* Bottom Navigation */}
+      <View style={styles.navbar}>
+        {tabs.map((tab) => (
+          <TouchableOpacity
+            key={tab.id}
+            style={[
+              styles.navItem,
+              activeTab === tab.id && styles.navItemActive,
+            ]}
+            onPress={() => setActiveTab(tab.id)}
+          >
+            <Text style={styles.navIcon}>{tab.icon}</Text>
+            <Text
+              style={[
+                styles.navLabel,
+                activeTab === tab.id && styles.navLabelActive,
+              ]}
+            >
+              {tab.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function PingScreen() {
+  return (
+    <ScrollView style={styles.screenContainer}>
       <View style={styles.header}>
         <Text style={styles.title}>🎮 PUBG Ping Optimizer</Text>
-        <Text style={styles.subtitle}>Real-time Network Monitoring</Text>
+        <Text style={styles.subtitle}>نمایندگی بهینه‌سازی پینگ</Text>
       </View>
 
-      {pingData && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Current Ping</Text>
-          <Text
-            style={[
-              styles.pingValue,
-              { color: getPingColor(pingData.ping) },
-            ]}
-          >
-            {pingData.ping}ms
-          </Text>
-          <Text style={styles.serverInfo}>Server: {pingData.server}</Text>
-          <Text style={styles.serverInfo}>Region: {pingData.region}</Text>
-          <Text style={styles.status}>Status: {pingData.status}</Text>
-        </View>
-      )}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>پینگ فعلی</Text>
+        <Text style={styles.pingValue}>45ms</Text>
+        <Text style={styles.serverInfo}>سرور: Asia-Seoul</Text>
+        <Text style={styles.status}>✅ وضعیت: عالی</Text>
+      </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Available Servers</Text>
-        {loading ? (
-          <ActivityIndicator size="large" color="#2196F3" />
-        ) : (
-          servers.map((server, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.serverButton}
-              onPress={() => checkPing(server.server)}
-            >
-              <View style={styles.serverContent}>
-                <Text style={styles.serverName}>{server.server}</Text>
-                <Text style={styles.serverRegion}>{server.region}</Text>
-              </View>
-              <Text
-                style={[
-                  styles.serverPing,
-                  { color: getPingColor(server.ping) },
-                ]}
-              >
-                {server.ping}ms
-              </Text>
-            </TouchableOpacity>
-          ))
+        <Text style={styles.sectionTitle}>سرورهای موجود</Text>
+        {['Asia-Seoul', 'Asia-Shanghai', 'Middle-East', 'Europe-London'].map(
+          (server, i) => (
+            <View key={i} style={styles.serverItem}>
+              <Text style={styles.serverName}>{server}</Text>
+              <Text style={styles.serverPing}>{45 + i * 10}ms</Text>
+            </View>
+          )
         )}
       </View>
+    </ScrollView>
+  );
+}
 
-      <TouchableOpacity style={styles.refreshButton} onPress={fetchServers}>
-        <Text style={styles.refreshButtonText}>🔄 Refresh Servers</Text>
-      </TouchableOpacity>
+function SettingsScreen() {
+  return (
+    <ScrollView style={styles.screenContainer}>
+      <View style={styles.header}>
+        <Text style={styles.title}>⚙️ تنظیمات</Text>
+        <Text style={styles.subtitle}>تنظیمات کاربر و ترجیحات</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.settingTitle}>حساب کاربری</Text>
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>نام کاربری:</Text>
+          <Text style={styles.settingValue}>Mansur1364</Text>
+        </View>
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>ایمیل:</Text>
+          <Text style={styles.settingValue}>mansur@example.com</Text>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.settingTitle}>تنظیمات برنامه</Text>
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>تم:</Text>
+          <Text style={styles.settingValue}>تاریک 🌙</Text>
+        </View>
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>اعلان‌ها:</Text>
+          <Text style={styles.settingValue}>فعال ✅</Text>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.settingTitle}>اطلاعات</Text>
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>نسخه:</Text>
+          <Text style={styles.settingValue}>1.0.0</Text>
+        </View>
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>توسعه‌دهنده:</Text>
+          <Text style={styles.settingValue}>Mansur1364</Text>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -120,8 +151,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
-    paddingHorizontal: 16,
-    paddingTop: 20,
+  },
+  content: {
+    flex: 1,
+  },
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 12,
+    paddingTop: 16,
   },
   header: {
     marginBottom: 24,
@@ -155,6 +193,7 @@ const styles = StyleSheet.create({
   pingValue: {
     fontSize: 42,
     fontWeight: 'bold',
+    color: '#4CAF50',
     marginBottom: 12,
   },
   serverInfo: {
@@ -176,7 +215,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 12,
   },
-  serverButton: {
+  serverItem: {
     backgroundColor: '#2a2a2a',
     borderRadius: 8,
     padding: 16,
@@ -185,33 +224,64 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  serverContent: {
-    flex: 1,
-  },
   serverName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  serverRegion: {
-    fontSize: 12,
-    color: '#BDBDBD',
-    marginTop: 4,
-  },
   serverPing: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#2196F3',
   },
-  refreshButton: {
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  refreshButtonText: {
+  settingTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#404040',
+  },
+  settingLabel: {
+    fontSize: 14,
+    color: '#BDBDBD',
+  },
+  settingValue: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  navbar: {
+    flexDirection: 'row',
+    backgroundColor: '#2a2a2a',
+    borderTopWidth: 1,
+    borderTopColor: '#404040',
+    paddingBottom: 8,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  navItemActive: {
+    borderTopWidth: 3,
+    borderTopColor: '#2196F3',
+  },
+  navIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  navLabel: {
+    fontSize: 12,
+    color: '#BDBDBD',
+  },
+  navLabelActive: {
+    color: '#2196F3',
+    fontWeight: 'bold',
   },
 });
